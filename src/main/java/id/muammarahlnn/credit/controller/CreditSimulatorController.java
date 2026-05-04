@@ -1,11 +1,11 @@
 package id.muammarahlnn.credit.controller;
 
-import id.muammarahlnn.credit.factory.CalculatorFactory;
+import id.muammarahlnn.credit.model.ExistingLoanCalculation;
 import id.muammarahlnn.credit.model.InstallmentYearResult;
 import id.muammarahlnn.credit.model.LoanRequest;
 import id.muammarahlnn.credit.model.enums.VehicleCondition;
 import id.muammarahlnn.credit.model.enums.VehicleType;
-import id.muammarahlnn.credit.service.LoanCalculator;
+import id.muammarahlnn.credit.service.LoanService;
 
 import java.util.List;
 import java.util.Scanner;
@@ -13,9 +13,11 @@ import java.util.Scanner;
 public class CreditSimulatorController {
 
     private final Scanner scanner;
+    private final LoanService loanService; // Controller only knows the Service
 
-    public CreditSimulatorController() {
+    public CreditSimulatorController(LoanService loanService) {
         this.scanner = new Scanner(System.in);
+        this.loanService = loanService;
     }
 
     public void run() {
@@ -39,6 +41,9 @@ public class CreditSimulatorController {
                     case "manual":
                         handleManualInput();
                         break;
+                    case "load":
+                        handleLoadExisting();
+                        break;
                     case "exit":
                         isRunning = false;
                         System.out.println("Exiting application. Goodbye!");
@@ -56,6 +61,7 @@ public class CreditSimulatorController {
         System.out.println("\n--- Available Commands ---");
         System.out.println("show   : Menampilkan semua command yang tersedia");
         System.out.println("manual : Input data kalkulasi secara manual step-by-step");
+        System.out.println("load   : Load data dari Web Service API");
         System.out.println("exit   : Keluar dari aplikasi");
         System.out.println("--------------------------");
     }
@@ -81,14 +87,32 @@ public class CreditSimulatorController {
         System.out.print("Input Jumlah DP: ");
         request.setDownPayment(Double.parseDouble(scanner.nextLine().trim()));
 
-        request.validate();
-        executeCalculation(request);
+        List<InstallmentYearResult> results = loanService.processLoan(request);
+        printResults(results);
     }
 
-    private void executeCalculation(LoanRequest request) {
-        LoanCalculator calculator = CalculatorFactory.getCalculator(request.getVehicleType());
-        List<InstallmentYearResult> results = calculator.calculate(request);
-        printResults(results);
+    private void handleLoadExisting() {
+        try {
+            System.out.println("Fetching and processing data from API...");
+            ExistingLoanCalculation calculation = loanService.loadAndProcessExistingLoan();
+
+            LoanRequest request = calculation.getRequest();
+            List<InstallmentYearResult> results = calculation.getResults();
+
+            System.out.println("\n--- Data successfully loaded! ---");
+            System.out.println("Kendaraan : " + request.getVehicleType().getValue() + " " + request.getCondition().getValue());
+            System.out.println("Tahun     : " + request.getVehicleYear());
+            System.out.println("Pinjaman  : Rp " + String.format("%,.0f", request.getTotalLoanAmount()));
+            System.out.println("Tenor     : " + request.getLoanTenure() + " tahun");
+            System.out.println("DP        : Rp " + String.format("%,.0f", request.getDownPayment()));
+            System.out.println("---------------------------------");
+
+            printResults(results);
+        } catch (IllegalArgumentException e) {
+            System.err.println("API Data violates business rules: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Failed to load or parse API data: " + e.getMessage());
+        }
     }
 
     private void printResults(List<InstallmentYearResult> results) {
