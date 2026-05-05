@@ -6,6 +6,7 @@ import id.muammarahlnn.credit.model.LoanRequest;
 import id.muammarahlnn.credit.model.enums.VehicleCondition;
 import id.muammarahlnn.credit.model.enums.VehicleType;
 import id.muammarahlnn.credit.service.LoanService;
+import id.muammarahlnn.credit.util.AppConstants;
 
 import java.util.List;
 import java.util.Map;
@@ -103,30 +104,37 @@ public class CreditSimulatorController {
     }
 
     private void handleManualInput() {
+        System.out.println("\n--- Mode Input Manual ---");
         LoanRequest request = new LoanRequest();
 
-        System.out.print("Input Jenis Kendaraan (Mobil|Motor): ");
-        request.setVehicleType(VehicleType.fromString(scanner.nextLine().trim()));
+        int currentYear = java.time.Year.now().getValue();
 
-        System.out.print("Input Kondisi Kendaraan (Baru|Bekas): ");
-        request.setCondition(VehicleCondition.fromString(scanner.nextLine().trim()));
+        VehicleType type = readVehicleType();
+        request.setVehicleType(type);
 
-        System.out.print("Input Tahun Kendaraan (ex: 2023): ");
-        request.setVehicleYear(Integer.parseInt(scanner.nextLine().trim()));
+        VehicleCondition condition = readVehicleCondition();
+        request.setCondition(condition);
 
-        System.out.print("Input Jumlah Pinjaman Total (Max 1 Miliar): ");
-        request.setTotalLoanAmount(Double.parseDouble(scanner.nextLine().trim()));
+        request.setVehicleYear(readVehicleYear(condition, currentYear));
 
-        System.out.print("Input Tenor Pinjaman (1-6 thn): ");
-        request.setLoanTenure(Integer.parseInt(scanner.nextLine().trim()));
+        double totalLoan = readTotalLoanAmount();
+        request.setTotalLoanAmount(totalLoan);
 
-        System.out.print("Input Jumlah DP: ");
-        request.setDownPayment(Double.parseDouble(scanner.nextLine().trim()));
+        request.setLoanTenure(readLoanTenure());
 
-        ExistingLoanCalculation calculation = loanService.processLoan(request);
-        printResults(calculation.getResults());
+        request.setDownPayment(readDownPayment(condition, totalLoan));
+
+        try {
+            ExistingLoanCalculation calculation = loanService.processLoan(request);
+            System.out.println("\n--- Kalkulasi Berhasil ---");
+            printRequestSummary(request);
+            printResults(calculation.getResults());
+        } catch (IllegalArgumentException e) {
+            System.err.println("\nValidasi Sistem Gagal: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("\nTerjadi kesalahan saat memproses data: " + e.getMessage());
+        }
     }
-
     private void handleLoadExisting() {
         try {
             System.out.println("Fetching and processing data from API...");
@@ -198,5 +206,109 @@ public class CreditSimulatorController {
             System.out.println(result.toString());
         }
         System.out.println();
+    }
+
+    private VehicleType readVehicleType() {
+        while (true) {
+            System.out.print("Input Jenis Kendaraan (Mobil|Motor): ");
+            String input = scanner.nextLine().trim();
+            try {
+                return VehicleType.fromString(input);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Error: Jenis kendaraan tidak valid. Ketik 'Mobil' atau 'Motor'.");
+            }
+        }
+    }
+
+    private VehicleCondition readVehicleCondition() {
+        while (true) {
+            System.out.print("Input Kondisi Kendaraan (Baru|Bekas): ");
+            String input = scanner.nextLine().trim();
+            try {
+                return VehicleCondition.fromString(input);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Error: Kondisi kendaraan tidak valid. Ketik 'Baru' atau 'Bekas'.");
+            }
+        }
+    }
+
+    private int readVehicleYear(VehicleCondition condition, int currentYear) {
+        while (true) {
+            System.out.print("Input Tahun Kendaraan (ex: 2023): ");
+            String input = scanner.nextLine().trim();
+            try {
+                int year = Integer.parseInt(input);
+
+                if (year < 1000 || year > currentYear) {
+                    System.err.println("Error: Tahun kendaraan harus 4 digit dan tidak boleh lebih dari " + currentYear + ".");
+                } else if (condition == VehicleCondition.NEW && year < (currentYear - 1)) {
+                    System.err.println("Error: Kendaraan BARU tidak boleh lebih lama dari tahun " + (currentYear - 1) + ".");
+                } else {
+                    return year;
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Error: Input tidak valid. Masukkan angka bulat.");
+            }
+        }
+    }
+    private double readTotalLoanAmount() {
+        while (true) {
+            System.out.print("Input Jumlah Pinjaman Total (Max " + String.format("%,.0f", AppConstants.MAX_LOAN_AMOUNT) + "): ");
+            String input = scanner.nextLine().trim();
+            try {
+                double amount = Double.parseDouble(input);
+                if (amount > 0 && amount <= AppConstants.MAX_LOAN_AMOUNT) {
+                    return amount;
+                } else {
+                    System.err.println("Error: Jumlah pinjaman harus > 0 dan maksimal Rp " +
+                            String.format("%,.0f", AppConstants.MAX_LOAN_AMOUNT));
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Error: Input tidak valid. Masukkan angka.");
+            }
+        }
+    }
+
+    private int readLoanTenure() {
+        while (true) {
+            System.out.print("Input Tenor Pinjaman (1-" + AppConstants.MAX_TENURE_YEARS + " thn): ");
+            String input = scanner.nextLine().trim();
+            try {
+                int tenure = Integer.parseInt(input);
+                if (tenure >= 1 && tenure <= AppConstants.MAX_TENURE_YEARS) {
+                    return tenure;
+                } else {
+                    System.err.println("Error: Tenor pinjaman harus antara 1 sampai " + AppConstants.MAX_TENURE_YEARS + " tahun.");
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Error: Input tidak valid. Masukkan angka bulat.");
+            }
+        }
+    }
+
+    private double readDownPayment(VehicleCondition condition, double totalLoan) {
+        double threshold = (condition == VehicleCondition.NEW) ?
+                AppConstants.DP_THRESHOLD_NEW : AppConstants.DP_THRESHOLD_USED;
+
+        double minDpAmount = totalLoan * threshold;
+
+        while (true) {
+            System.out.print("Input Jumlah DP (Min " + (threshold * 100) + "% = Rp " +
+                    String.format("%,.0f", minDpAmount) + "): ");
+            String input = scanner.nextLine().trim();
+            try {
+                double dp = Double.parseDouble(input);
+                if (dp >= minDpAmount && dp < totalLoan) {
+                    return dp;
+                } else if (dp >= totalLoan) {
+                    System.err.println("Error: DP tidak boleh lebih besar atau sama dengan total pinjaman.");
+                } else {
+                    System.err.println("Error: DP terlalu rendah. Minimal " + (threshold * 100) +
+                            "% (Rp " + String.format("%,.0f", minDpAmount) + ").");
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Error: Input tidak valid. Masukkan angka.");
+            }
+        }
     }
 }

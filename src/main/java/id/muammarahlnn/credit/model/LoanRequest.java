@@ -74,8 +74,11 @@ public class LoanRequest {
         if (this.vehicleType == null) throw new IllegalArgumentException("Vehicle type cannot be null");
         if (this.condition == null) throw new IllegalArgumentException("Vehicle condition cannot be null");
 
+        int currentYear = Year.now().getValue();
+        if (this.vehicleYear > currentYear) {
+            throw new IllegalArgumentException("Vehicle year cannot be in the future");
+        }
         if (this.condition == VehicleCondition.NEW) {
-            int currentYear = Year.now().getValue();
             if (this.vehicleYear < (currentYear - 1)) {
                 throw new IllegalArgumentException("NEW vehicles cannot be older than year " + (currentYear - 1));
             }
