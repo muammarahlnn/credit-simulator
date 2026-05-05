@@ -22,8 +22,25 @@ public class CreditSimulatorController {
         this.loanService = loanService;
     }
 
-    public void run() {
+    public void runInteractiveMode() {
         startInteractiveMode();
+    }
+
+    public void runFileMode() {
+        System.out.println("=== Memproses data dari file ===");
+        try {
+            ExistingLoanCalculation calculation = loanService.loadAndProcessExistingLoan();
+
+            LoanRequest request = calculation.getRequest();
+            System.out.println("\n--- Data successfully loaded! ---");
+            printRequestSummary(request);
+
+            printResults(calculation.getResults());
+        } catch (IllegalArgumentException e) {
+            System.err.println("File Data violates business rules: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Failed to read or parse file: " + e.getMessage());
+        }
     }
 
     private void startInteractiveMode() {
@@ -118,13 +135,8 @@ public class CreditSimulatorController {
             LoanRequest request = calculation.getRequest();
             List<InstallmentYearResult> results = calculation.getResults();
 
-            System.out.println("\n--- Data successfully loaded! ---");
-            System.out.println("Kendaraan : " + request.getVehicleType().getValue() + " " + request.getCondition().getValue());
-            System.out.println("Tahun     : " + request.getVehicleYear());
-            System.out.println("Pinjaman  : Rp " + String.format("%,.0f", request.getTotalLoanAmount()));
-            System.out.println("Tenor     : " + request.getLoanTenure() + " tahun");
-            System.out.println("DP        : Rp " + String.format("%,.0f", request.getDownPayment()));
-            System.out.println("---------------------------------");
+            System.out.println("\n--- Data successfully fetched! ---");
+            printRequestSummary(request);
 
             printResults(results);
         } catch (IllegalArgumentException e) {
@@ -166,14 +178,18 @@ public class CreditSimulatorController {
         LoanRequest request = calculation.getRequest();
 
         System.out.println("\n--- Membuka Data [ID: " + id + "] ---");
+        printRequestSummary(request);
+
+        printResults(calculation.getResults());
+    }
+
+    private void printRequestSummary(LoanRequest request) {
         System.out.println("Kendaraan : " + request.getVehicleType().getValue() + " " + request.getCondition().getValue());
         System.out.println("Tahun     : " + request.getVehicleYear());
         System.out.println("Pinjaman  : Rp " + String.format("%,.0f", request.getTotalLoanAmount()));
         System.out.println("Tenor     : " + request.getLoanTenure() + " tahun");
         System.out.println("DP        : Rp " + String.format("%,.0f", request.getDownPayment()));
         System.out.println("---------------------------------");
-
-        printResults(calculation.getResults());
     }
 
     private void printResults(List<InstallmentYearResult> results) {

@@ -1,0 +1,8 @@
+{
+  "vehicleType": "Motor",
+  "vehicleCondition": "Bekas",
+  "vehicleYear": 2022,
+  "totalLoanAmount": 20000000,
+  "loanTenure": 3,
+  "downPayment": 8000000
+}
