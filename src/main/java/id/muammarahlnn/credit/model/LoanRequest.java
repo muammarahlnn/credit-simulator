@@ -71,32 +71,32 @@ public class LoanRequest {
     }
 
     public void validate() throws IllegalArgumentException {
-        if (this.vehicleType == null) throw new IllegalArgumentException("Vehicle type cannot be null");
-        if (this.condition == null) throw new IllegalArgumentException("Vehicle condition cannot be null");
+        if (this.vehicleType == null) throw new IllegalArgumentException("Jenis kendaraan tidak boleh kosong");
+        if (this.condition == null) throw new IllegalArgumentException("Kondisi kendaraan tidak boleh kosong");
 
         int currentYear = Year.now().getValue();
         if (this.vehicleYear > currentYear) {
-            throw new IllegalArgumentException("Vehicle year cannot be in the future");
+            throw new IllegalArgumentException("Tahun kendaraan tidak boleh lebih dari tahun saat ini (" + currentYear + ")");
         }
         if (this.condition == VehicleCondition.NEW) {
             if (this.vehicleYear < (currentYear - 1)) {
-                throw new IllegalArgumentException("NEW vehicles cannot be older than year " + (currentYear - 1));
+                throw new IllegalArgumentException("Kendaraan BARU tidak boleh lebih lama dari tahun " + (currentYear - 1));
             }
         }
 
         if (this.loanTenure < 1 || this.loanTenure > AppConstants.MAX_TENURE_YEARS) {
-            throw new IllegalArgumentException("Tenure must be between 1 and " + AppConstants.MAX_TENURE_YEARS + " years");
+            throw new IllegalArgumentException("Tenor harus antara 1 sampai " + AppConstants.MAX_TENURE_YEARS + " tahun");
         }
 
         double dpRatio = this.downPayment / this.totalLoanAmount;
         if (this.condition == VehicleCondition.NEW && dpRatio < AppConstants.DP_THRESHOLD_NEW) {
-            throw new IllegalArgumentException("NEW vehicle Down Payment must be at least 35% of the total loan");
+            throw new IllegalArgumentException("DP kendaraan BARU minimal " + (AppConstants.DP_THRESHOLD_NEW * 100) + "% dari total pinjaman");
         } else if (this.condition == VehicleCondition.USED && dpRatio < AppConstants.DP_THRESHOLD_USED) {
-            throw new IllegalArgumentException("USED vehicle Down Payment must be at least 25% of the total loan");
+            throw new IllegalArgumentException("DP kendaraan BEKAS minimal " + (AppConstants.DP_THRESHOLD_USED * 100) + "% dari total pinjaman");
         }
 
         if (this.totalLoanAmount > AppConstants.MAX_LOAN_AMOUNT) {
-            throw new IllegalArgumentException("Loan amount exceeds the maximum limit of 1 Billion");
+            throw new IllegalArgumentException("Jumlah pinjaman melebihi batas maksimal Rp " + String.format("%,.0f", AppConstants.MAX_LOAN_AMOUNT));
         }
     }
 }

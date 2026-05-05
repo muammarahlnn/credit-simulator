@@ -33,20 +33,20 @@ public class CreditSimulatorController {
             ExistingLoanCalculation calculation = loanService.loadAndProcessExistingLoan();
 
             LoanRequest request = calculation.getRequest();
-            System.out.println("\n--- Data successfully loaded! ---");
+            System.out.println("\n--- Data berhasil dimuat! ---");
             printRequestSummary(request);
 
             printResults(calculation.getResults());
         } catch (IllegalArgumentException e) {
-            System.err.println("File Data violates business rules: " + e.getMessage());
+            System.err.println("Data File melanggar aturan bisnis: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Failed to read or parse file: " + e.getMessage());
+            System.err.println("Gagal membaca atau mem-parsing file: " + e.getMessage());
         }
     }
 
     private void startInteractiveMode() {
-        System.out.println("=== Welcome to Vehicle Credit Simulator ===");
-        System.out.println("Type 'show' to see available commands.");
+        System.out.println("=== Credit Simulator ===");
+        System.out.println("Ketik 'show' untuk melihat daftar perintah yang tersedia.");
 
         boolean isRunning = true;
         while (isRunning) {
@@ -79,10 +79,10 @@ public class CreditSimulatorController {
                         break;
                     case "exit":
                         isRunning = false;
-                        System.out.println("Exiting application. Goodbye!");
+                        System.out.println("Keluar dari aplikasi. Sampai jumpa!");
                         break;
                     default:
-                        System.out.println("Unknown command. Type 'show' for a list of commands.");
+                        System.out.println("Perintah tidak dikenal. Ketik 'show' untuk melihat daftar perintah.");
                 }
             } catch (NumberFormatException e) {
                 System.err.println("Error: ID harus berupa angka.");
@@ -93,14 +93,14 @@ public class CreditSimulatorController {
     }
 
     private void printCommands() {
-        System.out.println("\n--- Available Commands ---");
-        System.out.println("show        : Menampilkan semua command yang tersedia");
+        System.out.println("\n--- Daftar Perintah ---");
+        System.out.println("show        : Menampilkan semua perintah yang tersedia");
         System.out.println("manual      : Input data kalkulasi secara manual");
-        System.out.println("load        : Load data dari Web Service API");
-        System.out.println("history     : Lihat daftar kalkulasi yang tersimpan");
-        System.out.println("switch <id> : Tampilkan kembali kalkulasi sebelumnya (ex: switch 1)");
+        System.out.println("load        : Muat data dari Web Service API");
+        System.out.println("history     : Lihat daftar kalkulasi yang tersimpan pada sesi ini");
+        System.out.println("switch <id> : Tampilkan kembali detail kalkulasi sebelumnya (ex: switch 1)");
         System.out.println("exit        : Keluar dari aplikasi");
-        System.out.println("--------------------------");
+        System.out.println("-----------------------");
     }
 
     private void handleManualInput() {
@@ -135,22 +135,23 @@ public class CreditSimulatorController {
             System.err.println("\nTerjadi kesalahan saat memproses data: " + e.getMessage());
         }
     }
+
     private void handleLoadExisting() {
         try {
-            System.out.println("Fetching and processing data from API...");
+            System.out.println("Load dan memproses data dari API...");
             ExistingLoanCalculation calculation = loanService.loadAndProcessExistingLoan();
 
             LoanRequest request = calculation.getRequest();
             List<InstallmentYearResult> results = calculation.getResults();
 
-            System.out.println("\n--- Data successfully fetched! ---");
+            System.out.println("\n--- Data berhasil di-load! ---");
             printRequestSummary(request);
 
             printResults(results);
         } catch (IllegalArgumentException e) {
-            System.err.println("API Data violates business rules: " + e.getMessage());
+            System.err.println("Data API melanggar aturan bisnis: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Failed to load or parse API data: " + e.getMessage());
+            System.err.println("Gagal memuat atau mem-parsing data API: " + e.getMessage());
         }
     }
 
@@ -162,7 +163,7 @@ public class CreditSimulatorController {
             return;
         }
 
-        System.out.println("\n--- History Kalkulasi ---");
+        System.out.println("\n--- Riwayat Kalkulasi ---");
         for (Map.Entry<Integer, ExistingLoanCalculation> entry : history.entrySet()) {
             LoanRequest req = entry.getValue().getRequest();
             String summary = String.format("[%d] %s %s Tahun %d - Pinjaman: Rp %,.0f",
@@ -201,7 +202,7 @@ public class CreditSimulatorController {
     }
 
     private void printResults(List<InstallmentYearResult> results) {
-        System.out.println("\nOutput Jumlah Cicilan Perbulan:");
+        System.out.println("\nOutput Jumlah Cicilan Per Bulan:");
         for (InstallmentYearResult result : results) {
             System.out.println(result.toString());
         }
@@ -251,16 +252,17 @@ public class CreditSimulatorController {
             }
         }
     }
+
     private double readTotalLoanAmount() {
         while (true) {
-            System.out.print("Input Jumlah Pinjaman Total (Max " + String.format("%,.0f", AppConstants.MAX_LOAN_AMOUNT) + "): ");
+            System.out.print("Input Jumlah Pinjaman Total (Max Rp " + String.format("%,.0f", AppConstants.MAX_LOAN_AMOUNT) + "): ");
             String input = scanner.nextLine().trim();
             try {
                 double amount = Double.parseDouble(input);
                 if (amount > 0 && amount <= AppConstants.MAX_LOAN_AMOUNT) {
                     return amount;
                 } else {
-                    System.err.println("Error: Jumlah pinjaman harus > 0 dan maksimal Rp " +
+                    System.err.println("Error: Jumlah pinjaman harus lebih dari 0 dan maksimal Rp " +
                             String.format("%,.0f", AppConstants.MAX_LOAN_AMOUNT));
                 }
             } catch (NumberFormatException e) {
