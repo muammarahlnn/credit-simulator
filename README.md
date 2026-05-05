@@ -93,6 +93,20 @@ Process a specific file immediately and exit:
 ./credit_simulator docs/file_inputs.txt
 ```
 
+### Interactive Mode
+
+Since the application is containerized and hosted on Docker Hub, you can run it entirely without installing Java or Maven on your local machine.
+
+First pull the image
+```bash
+docker pull muammarahlnn/credit-simulator:latest
+```
+
+Then run it
+```bash
+docker run -it --rm muammarahlnn/credit-simulator:latest
+```
+
 ---
 
 ## Architecture
@@ -112,7 +126,7 @@ The application follows Clean Architecture principles to ensure maintainability 
 ├─────────────────────────────────────────────────────┤
 │                  Repository Layer                   │
 │  ApiLoanRepository · FileLoanRepository             │
-│  InMemoryHistoryRepository (interface-abstract)    │
+│  InMemoryHistoryRepository (interface-abstract)     │
 ├─────────────────────────────────────────────────────┤
 │                 CalculatorFactory                   │
 │      Car engine · Motorcycle engine (runtime)       │
@@ -139,7 +153,7 @@ Tests follow the **GWT (Given-When-Then)** pattern for maximum readability.
 
 ---
 
-## 📄 Example Input File
+## Example Input File
 
 `docs/file_inputs.txt`
 
